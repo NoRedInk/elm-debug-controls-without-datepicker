@@ -1,5 +1,5 @@
 {
-    "version": "1.0.1",
+    "version": "1.0.0",
     "summary": "(you probably want avh4/elm-debug-controls instead)",
     "repository": "https://github.com/avh4-experimental/elm-debug-controls-without-datepicker.git",
     "license": "BSD3",
