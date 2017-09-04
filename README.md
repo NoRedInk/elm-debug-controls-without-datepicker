@@ -1,4 +1,7 @@
-# elm-debug-controls
+# elm-debug-controls-without-datepicker
+
+**This is a fork of avh4/elm-debug-controls that does not provide a date picker control.**
+**Normally use should use avh4/elm-debug-controls instead.**
 
 This package helps you easily build interactive UIs for complex data structures.
 The resulting controls are not meant for building end-user UIs,

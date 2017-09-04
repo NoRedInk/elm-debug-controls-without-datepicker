@@ -5,7 +5,6 @@ module Debug.Control
         , bool
         , choice
         , currentValue
-        , date
         , field
         , list
         , map
@@ -21,7 +20,7 @@ module Debug.Control
 
 @docs Control
 @docs value
-@docs bool, string, date
+@docs bool, string
 @docs values, maybe, choice, list, record, field
 @docs map
 
@@ -29,13 +28,8 @@ module Debug.Control
 
 -}
 
-import Css
-import Date exposing (Date)
-import DateTimePicker
-import DateTimePicker.Css
 import Html exposing (Html)
 import Html.Attributes
-import Html.CssHelpers
 import Html.Events
 import Json.Decode
 import String
@@ -166,42 +160,6 @@ string value =
                         , Html.Events.onInput string
                         ]
                         []
-        }
-
-
-{-| A `Control` that allows a Date (include date and time) input
-with a date picker UI.
--}
-date : Date -> Control Date
-date value =
-    date_ DateTimePicker.initialState value
-
-
-date_ : DateTimePicker.State -> Date -> Control Date
-date_ state value =
-    Control
-        { currentValue = value
-        , allValues = \() -> [ value ] -- TODO
-        , view =
-            SingleView <|
-                \() ->
-                    Html.span
-                        [ Html.Attributes.style
-                            [ ( "display", "inline-block" ) ]
-                        ]
-                        [ DateTimePicker.dateTimePicker
-                            (\newState newDate ->
-                                case newDate of
-                                    Nothing ->
-                                        date_ newState value
-
-                                    Just d ->
-                                        date_ newState d
-                            )
-                            []
-                            state
-                            (Just value)
-                        ]
         }
 
 
@@ -459,11 +417,7 @@ view msg (Control c) =
                 ]
     in
     Html.div []
-        [ [ DateTimePicker.Css.css ]
-            |> Css.compile
-            |> .css
-            |> Html.CssHelpers.style
-        , view_ msg (Control c)
+        [ view_ msg (Control c)
         ]
 
 

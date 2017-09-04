@@ -49,7 +49,7 @@ init =
                 )
             |> Control.field "autorename" (Control.bool False)
             |> Control.field "clientModified"
-                (Control.maybe False <| Control.date <| Date.fromTime 0)
+                (Control.maybe False <| Control.value <| Date.fromTime 0)
             |> Control.field "mute" (Control.bool False)
             |> Control.field "content" (Control.string "HELLO.")
     }
