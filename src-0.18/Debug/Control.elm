@@ -55,9 +55,9 @@ value initial =
 {-| A `Control` that chooses between a list of values with a dropdown UI.
 The first value will be the initial value.
 -}
-values : List a -> Control a
-values choices =
-    choice (List.map (\x -> ( toString x, value x )) choices)
+values : (a -> String) -> a -> List a -> Control a
+values xToString first choices =
+    choice ( xToString first, value first ) (List.map (\x -> ( xToString x, value x )) choices)
 
 
 {-| A `Control` that wraps another control in a `Maybe`, which a checkbox UI.
@@ -155,14 +155,9 @@ string value =
 This will crash if you provide an empty list.
 The first entry will be the initial value.
 -}
-choice : List ( String, Control a ) -> Control a
-choice choices =
-    case choices of
-        [] ->
-            Debug.crash "No choices given"
-
-        first :: rest ->
-            choice_ [] first rest
+choice : ( String, Control a ) -> List ( String, Control a ) -> Control a
+choice first rest =
+    choice_ [] first rest
 
 
 choice_ :
