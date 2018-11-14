@@ -10,9 +10,8 @@ import Test.Html.Selector exposing (..)
 
 
 yesNoControls =
-    Control.choice
-        [ ( "YES", Control.value True )
-        , ( "NO", Control.value False )
+    Control.choice ( "YES", Control.value True )
+        [ ( "NO", Control.value False )
         ]
 
 

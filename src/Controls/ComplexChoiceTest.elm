@@ -14,16 +14,16 @@ type Animal
     | Giraffe
 
 
+maybeControls : Control.Control (Maybe Animal)
 maybeControls =
     Control.choice
-        [ ( "Animal"
-          , Control.map Just <|
-                Control.choice
-                    [ ( "Monkey", Control.value Monkey )
-                    , ( "Giraffe", Control.value Giraffe )
-                    ]
-          )
-        , ( "---", Control.value Nothing )
+        ( "Animal"
+        , Control.map Just <|
+            Control.choice ( "Monkey", Control.value Monkey )
+                [ ( "Giraffe", Control.value Giraffe )
+                ]
+        )
+        [ ( "---", Control.value Nothing )
         ]
 
 
