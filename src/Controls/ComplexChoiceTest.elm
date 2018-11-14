@@ -14,6 +14,7 @@ type Animal
     | Giraffe
 
 
+maybeControls : Control.Control (Maybe Animal)
 maybeControls =
     Control.choice
         ( "Animal"
