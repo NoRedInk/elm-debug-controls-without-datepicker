@@ -218,7 +218,7 @@ choice_ left current right =
                                     all
                                         |> List.drop (i + 1)
                             in
-                            choice_ left_ current_ right_ |> Debug.log "new"
+                            choice_ left_ current_ right_
 
                         updateChild new =
                             choice_ left ( Tuple.first current, new ) right
