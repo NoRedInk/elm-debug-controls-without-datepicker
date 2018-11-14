@@ -14,7 +14,6 @@ module Debug.Control exposing
 @docs bool, string
 @docs values, maybe, choice, list, record, field
 @docs map
-
 @docs view, currentValue, allValues
 
 -}
@@ -54,49 +53,45 @@ value initial =
 
 
 {-| A `Control` that chooses between a list of values with a dropdown UI.
-
 The first value will be the initial value.
-
 -}
 values : (a -> String) -> a -> List a -> Control a
-values xToString first rest =
-    choice ( xToString first, value first ) (List.map (\x -> ( xToString x, value x )) rest)
+values xToString first choices =
+    choice ( xToString first, value first ) (List.map (\x -> ( xToString x, value x )) choices)
 
 
 {-| A `Control` that wraps another control in a `Maybe`, which a checkbox UI.
-
 The `Bool` parameter is the initial value, where `False` is `Nothing`,
 and `True` is `Just` with the value of the nested control.
-
 -}
 maybe : Bool -> Control a -> Control (Maybe a)
-maybe isJust (Control value_) =
+maybe isJust (Control value) =
     Control
         { currentValue =
             if isJust then
-                Just value_.currentValue
+                Just value.currentValue
 
             else
                 Nothing
         , allValues =
             \() ->
                 Nothing
-                    :: List.map Just (value_.allValues ())
+                    :: List.map Just (value.allValues ())
         , view =
             SingleView <|
                 \() ->
                     Html.span
-                        [ Html.Attributes.style "white-space" "nowrap"
+                        [ Html.Attributes.style [ ( "white-space", "nowrap" ) ]
                         ]
                         [ Html.input
                             [ Html.Attributes.type_ "checkbox"
-                            , Html.Events.onCheck <| \v -> maybe v (Control value_)
+                            , Html.Events.onCheck (flip maybe (Control value))
                             , Html.Attributes.checked isJust
                             ]
                             []
                         , Html.text " "
                         , if isJust then
-                            view_ (maybe isJust) (Control value_)
+                            view_ (maybe isJust) (Control value)
 
                           else
                             Html.text "Nothing"
@@ -107,13 +102,13 @@ maybe isJust (Control value_) =
 {-| A `Control` that toggles a `Bool` with a checkbox UI.
 -}
 bool : Bool -> Control Bool
-bool value_ =
+bool value =
     Control
-        { currentValue = value_
+        { currentValue = value
         , allValues =
             \() ->
-                [ value_
-                , not value_
+                [ value
+                , not value
                 ]
         , view =
             SingleView <|
@@ -122,17 +117,11 @@ bool value_ =
                         [ Html.input
                             [ Html.Attributes.type_ "checkbox"
                             , Html.Events.onCheck bool
-                            , Html.Attributes.checked value_
+                            , Html.Attributes.checked value
                             ]
                             []
                         , Html.text " "
-                        , Html.text <|
-                            case value_ of
-                                True ->
-                                    "True"
-
-                                False ->
-                                    "False"
+                        , Html.text <| toString value
                         ]
         }
 
@@ -140,12 +129,12 @@ bool value_ =
 {-| A `Control` that allows text input.
 -}
 string : String -> Control String
-string value_ =
+string value =
     Control
-        { currentValue = value_
+        { currentValue = value
         , allValues =
             \() ->
-                [ value_
+                [ value
                 , ""
                 , "short"
                 , "Longwordyesverylongwithnospacessupercalifragilisticexpialidocious"
@@ -155,7 +144,7 @@ string value_ =
             SingleView <|
                 \() ->
                     Html.input
-                        [ Html.Attributes.value value_
+                        [ Html.Attributes.value value
                         , Html.Events.onInput string
                         ]
                         []
@@ -163,11 +152,8 @@ string value_ =
 
 
 {-| A `Control` that chooses between a list of nested controls.
-
 This will crash if you provide an empty list.
-
 The first entry will be the initial value.
-
 -}
 choice : ( String, Control a ) -> List ( String, Control a ) -> Control a
 choice first rest =
@@ -191,7 +177,7 @@ choice_ left current right =
             SingleView <|
                 \() ->
                     let
-                        option selected ( label, value_ ) =
+                        option selected ( label, value ) =
                             Html.option
                                 [ Html.Attributes.selected selected ]
                                 [ Html.text label ]
@@ -218,7 +204,7 @@ choice_ left current right =
                                     all
                                         |> List.drop (i + 1)
                             in
-                            choice_ left_ current_ right_
+                            choice_ left_ current_ right_ |> Debug.log "new"
 
                         updateChild new =
                             choice_ left ( Tuple.first current, new ) right
@@ -261,7 +247,7 @@ list_ itemControl current min max =
             \() ->
                 [ 1, 0, 3 ]
                     |> List.filter (\x -> x > min && x < max)
-                    |> (\x -> List.append x [ min, max ])
+                    |> flip List.append [ min, max ]
                     |> List.map makeList
         , view =
             SingleView <|
@@ -272,6 +258,7 @@ list_ itemControl current min max =
                     in
                     Html.map
                         (String.toInt
+                            >> Result.toMaybe
                             >> Maybe.withDefault current
                             >> selectNew
                         )
@@ -280,10 +267,10 @@ list_ itemControl current min max =
                             [ Html.text ""
                             , Html.input
                                 [ Html.Attributes.type_ "range"
-                                , Html.Attributes.min <| String.fromInt min
-                                , Html.Attributes.max <| String.fromInt max
-                                , Html.Attributes.step <| String.fromInt 1
-                                , Html.Attributes.attribute "value" <| String.fromInt current
+                                , Html.Attributes.min <| toString min
+                                , Html.Attributes.max <| toString max
+                                , Html.Attributes.step <| toString 1
+                                , Html.Attributes.attribute "value" <| toString current
                                 , Html.Events.on "input" Html.Events.targetValue
                                 ]
                                 []
@@ -292,24 +279,18 @@ list_ itemControl current min max =
 
 
 {-| Create a `Control` representing a record with multiple fields.
-
 This uses an API similar to [elm-decode-pipeline](http://package.elm-lang.org/packages/NoRedInk/elm-decode-pipeline/latest).
-
 You will use this with `field`.
-
-    import Debug.Control exposing (field, record, string)
-
-    type alias Point =
-        { x : String
-        , y : String
-        }
-
-    pointControl : Control Point
-    pointControl =
-        record Point
-            |> field "x" (string "initial x value")
-            |> field "y" (string "initial y value")
-
+import Debug.Control exposing (field, record, string)
+type alias Point =
+{ x : String
+, y : String
+}
+pointControl : Control Point
+pointControl =
+record Point
+|> field "x" (string "initial x value")
+|> field "y" (string "initial y value")
 -}
 record : a -> Control a
 record fn =
@@ -321,17 +302,15 @@ record fn =
 
 
 {-| Used with `record` to create a `Control` representing a record.
-
 See [`record`](#record).
-
 -}
 field : String -> Control a -> Control (a -> b) -> Control b
-field name (Control value_) (Control pipeline) =
+field name (Control value) (Control pipeline) =
     Control
-        { currentValue = pipeline.currentValue value_.currentValue
+        { currentValue = pipeline.currentValue value.currentValue
         , allValues =
             \() ->
-                value_.allValues ()
+                value.allValues ()
                     |> List.concatMap
                         (\v ->
                             List.map (\p -> p v)
@@ -342,14 +321,14 @@ field name (Control value_) (Control pipeline) =
                 otherFields =
                     case pipeline.view of
                         FieldViews fs ->
-                            List.map (Tuple.mapSecond (\x -> \() -> Html.map (field name (Control value_)) (x ())))
+                            List.map (Tuple.mapSecond (\x -> \() -> Html.map (field name (Control value)) (x ())))
                                 fs
 
                         _ ->
                             []
 
                 newView () =
-                    view_ (\v -> field name v (Control pipeline)) (Control value_)
+                    view_ (\v -> field name v (Control pipeline)) (Control value)
             in
             FieldViews (( name, newView ) :: otherFields)
         }
@@ -360,8 +339,8 @@ field name (Control value_) (Control pipeline) =
 map : (a -> b) -> Control a -> Control b
 map fn (Control a) =
     let
-        mapTuple ( label, value_ ) =
-            ( label, map fn value_ )
+        mapTuple ( label, value ) =
+            ( label, map fn value )
     in
     Control
         { currentValue = fn a.currentValue
@@ -400,13 +379,13 @@ allValues (Control c) =
 view : (Control a -> msg) -> Control a -> Html msg
 view msg (Control c) =
     let
-        fieldRow ( name, view__ ) =
+        fieldRow ( name, view ) =
             Html.tr []
                 [ Html.td
-                    [ Html.Attributes.style "text-align" "right" ]
+                    [ Html.Attributes.style [ ( "text-align", "right" ) ] ]
                     [ Html.text name ]
                 , Html.td [] [ Html.text " = " ]
-                , Html.td [] [ view__ () ]
+                , Html.td [] [ view () ]
                 ]
     in
     Html.div []
@@ -417,17 +396,19 @@ view msg (Control c) =
 view_ : (Control a -> msg) -> Control a -> Html msg
 view_ msg (Control c) =
     let
-        fieldRow ( name, view__ ) =
+        fieldRow ( name, view ) =
             Html.tr
-                [ Html.Attributes.style "vertical-align" "text-top"
+                [ Html.Attributes.style
+                    [ ( "vertical-align", "text-top" ) ]
                 ]
                 [ Html.td [] [ Html.text "," ]
                 , Html.td
-                    [ Html.Attributes.style "text-align" "right"
+                    [ Html.Attributes.style
+                        [ ( "text-align", "right" ) ]
                     ]
                     [ Html.text name ]
                 , Html.td [] [ Html.text " = " ]
-                , Html.td [] [ view__ () ]
+                , Html.td [] [ view () ]
                 ]
     in
     case c.view of
@@ -440,7 +421,8 @@ view_ msg (Control c) =
         FieldViews fs ->
             List.concat
                 [ [ Html.tr
-                        [ Html.Attributes.style "vertical-align" "text-top"
+                        [ Html.Attributes.style
+                            [ ( "vertical-align", "text-top" ) ]
                         ]
                         [ Html.td [] [ Html.text "{" ] ]
                   ]
